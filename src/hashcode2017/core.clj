@@ -60,6 +60,23 @@
    :caches @caches-atom
    :results (reduce #(assoc %1 (keyword (str %2)) []) {} (range caches))})
 
+(defn- write-results
+  "Write results to the file results.out"
+  [results]
+  (with-open [wrtr (writer "results.out")]
+    (.write wrtr (str 
+                  (apply + 
+                          (map (fn [[key value]] (if (empty? value) 0 1)) (into [] results)))))
+    (.newLine wrtr)
+    (doseq [[k values] results]
+      (when-not (empty? values)
+        (.write wrtr 
+          (str/join " " (str (name k))))
+        (doseq [v values]
+            (.write wrtr 
+              (str " " v)))
+        (.newLine wrtr)))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -69,4 +86,4 @@
             (reset! videos-atom videos-size)
             (-> (parse-endpoints 0 tail endpoints {})
                 (parse-requests))
-    (reduce #(process-endpoints %1 %2) (config cache) @requests-atom))))
+    (write-results @requests-atom))))
