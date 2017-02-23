@@ -21,9 +21,16 @@
          (into []))))
 
 (defn- calculate-latencies [caches]
-  (reduce merge
-    (map (fn [h] (println h)) 
-         caches)))
+  (let [h (reduce merge {} (map (fn [h] (hash-map
+                                          (keyword (str (first h)))
+                                          (last h)))
+                                        caches))
+        ret (sort-by last h)
+        pret (map #(read-string (name %)) (keys ret))]
+        (println "Calculated latencies:")
+        (println pret)
+        pret))
+
 
 (defn- parse-endpoint [[[datacenter-latency caches-connected] & tail]]
   [datacenter-latency caches-connected
