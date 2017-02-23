@@ -13,7 +13,7 @@
       (update :results conj video-id)
       (update :caches insert-video target-cache current-video-size)))
 
-(defn process-endpoints [current-state [video-id endpoint-id num-requests]
+(defn process-endpoints [current-state [video-id endpoint-id num-requests]]
   (let [current-endpoint-caches (get-in current-state :endpoints (keyword (str endpoint-id)))
         current-video-size (nth (get current-state :videos) video-id)
         cache-remaining-sizes (get-in current-state :caches)

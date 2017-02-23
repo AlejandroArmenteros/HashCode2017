@@ -1,7 +1,13 @@
 (ns hashcode2017.core
   (require [clojure.string :as str]
-           [clojure.java.io :refer [reader writer]])
+           [clojure.java.io :refer [reader writer]]
+           [hashcode2017.reducer :refer [process-endpoints]])
   (:gen-class))
+
+(def videos-atom (atom {}))
+(def endpoints-atom (atom {}))
+(def caches-atom (atom {}))
+(def requests-atom (atom []))
 
 (defn- ->int 
   [x]
@@ -27,8 +33,6 @@
                                         caches))
         ret (sort-by last h)
         pret (map #(read-string (name %)) (keys ret))]
-        (println "Calculated latencies:")
-        (println pret)
         pret))
 
 
@@ -37,24 +41,32 @@
           (take caches-connected tail)
           (drop caches-connected tail)])
 
-(defn- parse-endpoints [e t endpoints result] 
+(defn- parse-endpoints [e t endpoints result]
   (if (< e endpoints)
-            (let [[datacenter-latency caches-connected caches-e t2 :as p] (parse-endpoint t)]
-              (recur (inc e) t2 endpoints (assoc result e {:id e
-                                                 :latency-datacenter datacenter-latency
-                                                 :number-caches caches-connected
-                                                 :latencies (calculate-latencies caches-e)})))))
-
-(defn- parse-request [[video endpoint requests]]
-  (println requests))
+  					(let [[datacenter-latency caches-connected caches-e t2] (parse-endpoint t)]
+  						(recur (inc e) t2 endpoints (assoc result (keyword (str e)) (calculate-latencies caches-e))))
+            (do (reset! endpoints-atom result)
+                t)))
 
 (defn- parse-requests [tail]
-  (map #(parse-request %) tail))
+	(reset! requests-atom 
+    (reverse 
+      (sort-by #(nth % 2) 
+                tail))))
+
+(defn- config [caches]
+  {:videos @videos-atom
+   :endpoints @endpoints-atom
+   :caches @caches-atom
+   :results (reduce #(assoc %1 (keyword (str %2)) []) {} (range caches))})
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
   (if-let [filename (first args)]
-    (let [[[videos endpoints request-desc cache size] & [videos-size & tail]] (-> filename parse-file)]
-      (parse-endpoints 0 tail endpoints {})
-            (parse-requests []))))
+  	(let [[[videos endpoints request-desc cache size] & [videos-size & tail]] (-> filename parse-file)]
+  		      (reset! caches-atom (take cache (repeat size)))
+            (reset! videos-atom videos-size)
+            (-> (parse-endpoints 0 tail endpoints {})
+                (parse-requests))
+    (reduce #(process-endpoints (config cache) %) @requests-atom))))
