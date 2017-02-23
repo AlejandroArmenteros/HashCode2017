@@ -69,4 +69,4 @@
             (reset! videos-atom videos-size)
             (-> (parse-endpoints 0 tail endpoints {})
                 (parse-requests))
-    (reduce #(process-endpoints (config cache) %) @requests-atom))))
+    (reduce #(process-endpoints %1 %2) (config cache) @requests-atom))))

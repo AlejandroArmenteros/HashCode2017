@@ -10,13 +10,13 @@
 
 (defn- update-current-state [current-state video-id current-video-size target-cache]
   (-> current-state
-      (update :results conj video-id)
+      (update :results (fn [state] (update state (keyword (str video-id)) #(conj video-id))))
       (update :caches insert-video target-cache current-video-size)))
 
 (defn process-endpoints [current-state [video-id endpoint-id num-requests]]
-  (let [current-endpoint-caches (get-in current-state :endpoints (keyword (str endpoint-id)))
+  (let [current-endpoint-caches (get-in current-state [:endpoints (keyword (str endpoint-id))])
         current-video-size (nth (get current-state :videos) video-id)
-        cache-remaining-sizes (get-in current-state :caches)
+        cache-remaining-sizes (get current-state :caches)
         target-cache (some #(try-cache % current-video-size (nth cache-remaining-sizes %)) current-endpoint-caches)]
     
     (if (not (nil? target-cache))
